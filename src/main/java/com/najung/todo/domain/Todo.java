@@ -43,11 +43,11 @@ public class Todo {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @LastModifiedDate
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime modifiedAt; // 수정일시
 
     @LastModifiedBy
-    @Column(nullable = false, length = 100)
+    @Column(nullable = true, length = 100)
     private String modifiedBy; // 수정자
 
     protected Todo() {}
