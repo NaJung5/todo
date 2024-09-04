@@ -1,6 +1,6 @@
 package com.najung.todo.repository;
 
-import com.najung.todo.domain.QToDo;
+import com.najung.todo.domain.QTodo;
 import com.najung.todo.domain.Todo;
 import com.querydsl.core.types.dsl.SimpleExpression;
 import com.querydsl.core.types.dsl.StringExpression;
@@ -14,12 +14,12 @@ import org.springframework.data.querydsl.binding.QuerydslBindings;
 public interface TodoRepository extends
         JpaRepository<Todo, Long>,
         QuerydslPredicateExecutor<Todo>,
-        QuerydslBinderCustomizer<QToDo> {
+        QuerydslBinderCustomizer<QTodo> {
 
     Page<Todo> findByIdContaining(Long id, Pageable pageable);
 
     @Override
-    default void customize(QuerydslBindings bindings, QToDo toDo) {
+    default void customize(QuerydslBindings bindings, QTodo toDo) {
         bindings.bind(toDo.content).first(StringExpression::containsIgnoreCase);
         bindings.bind(toDo.important).first(SimpleExpression::eq);
     }
