@@ -18,11 +18,12 @@ public interface TodoRepository extends
         QuerydslPredicateExecutor<Todo>,
         QuerydslBinderCustomizer<QTodo> {
 
-    Page<Todo> findByIdContaining(Long id, Pageable pageable);
+    Page<Todo> findByMember_sno(Long id, Pageable pageable);
 
     @Override
     default void customize(QuerydslBindings bindings, QTodo toDo) {
         bindings.bind(toDo.content).first(StringExpression::containsIgnoreCase);
         bindings.bind(toDo.important).first(SimpleExpression::eq);
     }
+
 }
