@@ -13,8 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
 @Slf4j
 @RequiredArgsConstructor
 @Transactional
@@ -31,22 +29,28 @@ public class TodoService {
 
 
     public void saveTodo(TodoDto dto) {
-        todoRepository.save(dto.toEntity());
+        Member member = memberRepository.getReferenceById(dto.memberDto().sno());
+        todoRepository.save(dto.toEntity(member));
 
     }
 
-    public void updateTodo(TodoDto dto) {
+    public void updateTodo(Long todoId, TodoDto dto) {
         try {
-            Todo todo = todoRepository.getReferenceById(dto.id());
-            if (dto.complete() != null) todo.setComplete(dto.complete());
-            if (dto.important() != null) todo.setImportant(dto.important());
-            if (dto.content() != null) todo.setContent(dto.content());
+            Todo todo = todoRepository.getReferenceById(todoId);
+            Member member = memberRepository.getReferenceById(dto.memberDto().sno());
+            if(todo.getMember().equals(member)){
+                if (dto.complete() != null) todo.setComplete(dto.complete());
+                if (dto.important() != null) todo.setImportant(dto.important());
+                if (dto.content() != null) todo.setContent(dto.content());
+            }
         } catch (EntityNotFoundException e) {
             log.warn("변경 할 todo-list 가 없습니다. - dto: {}", dto);
         }
     }
 
-    public void deleteTodo(long todoId) {
+    public void deleteTodo(Long todoId, Long memberId) {
+        todoRepository.findByIdAndMember_sno(todoId, memberId)
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 정보 입니다. 삭제에 실패했습니다."));
         todoRepository.deleteById(todoId);
     }
 }

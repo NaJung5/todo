@@ -6,26 +6,17 @@ import com.najung.todo.domain.Member;
  * DTO for {@link Member}
  */
 public record MemberDto(
-        Long sno,
-        String nickname
+        Long sno
 ) {
-    public static MemberDto of(Long id, String nickname) {
-        return new MemberDto(id, nickname);
+    public static MemberDto of(Long sno) {
+        return new MemberDto(sno);
     }
 
     public static MemberDto from(Member entity) {
         return new MemberDto(
-                entity.getSno(),
-                entity.getNickname()
+                entity.getSno()
         );
     }
 
-    public Member toEntity(){
-        return Member.of(
-                "najung",
-                "1234",
-                "najung"
 
-        );
-    }
 }

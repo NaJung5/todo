@@ -17,7 +17,9 @@ public record TodoDto(
     public static TodoDto of(Long id, MemberDto memberDto, String content, String complete, String important) {
         return new TodoDto(id, memberDto, content, complete, important, LocalDateTime.now(), null);
     }
-
+    public static TodoDto of(MemberDto memberDto, String content, String complete, String important) {
+        return new TodoDto(null, memberDto, content, complete, important, LocalDateTime.now(), null);
+    }
     public static TodoDto from(Todo entity) {
         return new TodoDto(
                 entity.getId(),
@@ -30,9 +32,9 @@ public record TodoDto(
         );
     }
 
-    public Todo toEntity(){
+    public Todo toEntity(Member member){
         return Todo.of(
-                memberDto.toEntity(),
+                member,
                 content,
                 complete,
                 important

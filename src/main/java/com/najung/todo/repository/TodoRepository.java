@@ -12,6 +12,8 @@ import org.springframework.data.querydsl.binding.QuerydslBinderCustomizer;
 import org.springframework.data.querydsl.binding.QuerydslBindings;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
+import java.util.Optional;
+
 @RepositoryRestResource
 public interface TodoRepository extends
         JpaRepository<Todo, Long>,
@@ -19,6 +21,8 @@ public interface TodoRepository extends
         QuerydslBinderCustomizer<QTodo> {
 
     Page<Todo> findByMember_sno(Long id, Pageable pageable);
+
+    Optional<Todo> findByIdAndMember_sno(Long todoId, Long memberId);
 
     @Override
     default void customize(QuerydslBindings bindings, QTodo toDo) {
