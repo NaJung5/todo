@@ -4,8 +4,8 @@ import com.najung.todo.domain.Member;
 import com.najung.todo.domain.Todo;
 import com.najung.todo.dto.TodoDto;
 import com.najung.todo.dto.MemberDto;
+import com.najung.todo.repository.MemberRepository;
 import com.najung.todo.repository.TodoRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +28,7 @@ class TodoServiceTest {
 
     @InjectMocks private TodoService sut;
     @Mock private TodoRepository todoRepository;
+    @Mock private MemberRepository memberRepository;
 
     @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo-list를 저장 ")
     @Test
@@ -66,9 +69,10 @@ class TodoServiceTest {
         // Given
         Todo todo = createTodo();
         TodoDto dto = createTodoDto("content", "complete", "important");
+
         given(todoRepository.getReferenceById(dto.id())).willReturn(todo);
         // When
-        sut.updateTodo(dto);
+        sut.updateTodo(dto.memberDto().sno(), dto);
         // Then
         then(todoRepository).should().getReferenceById(dto.id());
 
@@ -80,11 +84,17 @@ class TodoServiceTest {
 
         // Given
         Long todoId = 1L;
+        Long memberId = 1L;
+
+        Todo todo = createTodo();
+        given(todoRepository.findByIdAndMember_sno(todoId, memberId)).willReturn(Optional.of(todo));
         willDoNothing().given(todoRepository).deleteById(todoId);
 
         // When
-        sut.deleteTodo(todoId);
+        sut.deleteTodo(todoId, memberId);
+
         // Then
+        then(todoRepository).should().findByIdAndMember_sno(todoId, memberId);
         then(todoRepository).should().deleteById(todoId);
 
     }
@@ -122,8 +132,7 @@ class TodoServiceTest {
 
     public MemberDto createUserDto(){
         return MemberDto.of(
-                1L,
-                "najung"
+                1L
         );
     }
 }
