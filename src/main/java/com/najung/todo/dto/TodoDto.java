@@ -12,13 +12,14 @@ public record TodoDto(
         String complete,
         String important,
         LocalDateTime createdAt,
-        LocalDateTime modifiedAt
+        LocalDateTime modifiedAt,
+        LocalDateTime dueDate
 ) {
-    public static TodoDto of(Long id, MemberDto memberDto, String content, String complete, String important) {
-        return new TodoDto(id, memberDto, content, complete, important, LocalDateTime.now(), null);
+    public static TodoDto of(Long id, MemberDto memberDto, String content, String complete, String important,LocalDateTime dueDate) {
+        return new TodoDto(id, memberDto, content, complete, important, LocalDateTime.now(), null, dueDate);
     }
-    public static TodoDto of(MemberDto memberDto, String content, String complete, String important) {
-        return new TodoDto(null, memberDto, content, complete, important, LocalDateTime.now(), null);
+    public static TodoDto of(MemberDto memberDto, String content, String complete, String important, LocalDateTime dueDate) {
+        return new TodoDto(null, memberDto, content, complete, important, LocalDateTime.now(), null, dueDate);
     }
     public static TodoDto from(Todo entity) {
         return new TodoDto(
@@ -28,7 +29,8 @@ public record TodoDto(
                 entity.getComplete(),
                 entity.getImportant(),
                 entity.getCreatedAt(),
-                entity.getModifiedAt()
+                entity.getModifiedAt(),
+                entity.getDueDate()
         );
     }
 
@@ -37,7 +39,8 @@ public record TodoDto(
                 member,
                 content,
                 complete,
-                important
+                important,
+                dueDate
         );
     }
 

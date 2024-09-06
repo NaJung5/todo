@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,26 +29,39 @@ public class TodoController {
         return todoService.searchTodo(userId, pageable).map(TodoResponse::from);
     }
 
-    @PostMapping("/new/{memberId}")
+    @PostMapping("/members/{memberId}/todos")
     public ResponseEntity<?> postTodo(@PathVariable Long memberId,
                                       @RequestBody TodoRequest todoRequest){
-        todoService.saveTodo(todoRequest.toDto(MemberDto.of(memberId)));
+        todoService.saveTodo(memberId, todoRequest);
         return ResponseEntity.ok("저장 되었습니다.");
     }
 
-    @PostMapping("/update/{todoId}/{memberId}")
+    @PutMapping("/member/{memberId}/todo/{todoId}")
     public ResponseEntity<?> updateTodo(@PathVariable Long todoId,
                                         @PathVariable Long memberId,
                                         @RequestBody TodoRequest todoRequest){
-        MemberDto memberDto = MemberDto.of(memberId);
-        todoService.updateTodo(todoId, todoRequest.toDto(memberDto));
+        todoService.updateTodo(todoId, memberId, todoRequest);
         return ResponseEntity.ok("수정 되었습니다.");
     }
+
+    @PatchMapping("/members/{memberId}/todo/{todoId}/due-date")
+    public ResponseEntity<?> updateDueDate(@PathVariable Long memberId,
+                                           @PathVariable Long todoId,
+                                           @RequestBody TodoRequest todoRequest) {
+
+        todoService.updateDueDate(memberId, todoId, todoRequest);
+        return ResponseEntity.ok("일정이 수정되었습니다.");
+    }
+
 
     @DeleteMapping("/delete/{todoId}/{memberId}")
     public ResponseEntity<?> deleteTodo(@PathVariable Long todoId,
                                         @PathVariable Long memberId){
-        todoService.deleteTodo(todoId, memberId);
-        return ResponseEntity.ok("삭제되었습니다.");
+        boolean isDeleted = todoService.deleteTodo(todoId, memberId);
+        if (isDeleted) {
+            return ResponseEntity.ok("삭제되었습니다.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("삭제할 todo가 없습니다.");
+        }
     }
 }
