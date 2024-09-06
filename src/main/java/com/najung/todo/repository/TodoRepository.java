@@ -20,6 +20,8 @@ public interface TodoRepository extends
 
     Page<Todo> findByMember_sno(Long id, Pageable pageable);
 
+    Integer deleteByIdAndMember_Sno(Long id, Long sno);
+
     @Override
     default void customize(QuerydslBindings bindings, QTodo toDo) {
         bindings.bind(toDo.content).first(StringExpression::containsIgnoreCase);

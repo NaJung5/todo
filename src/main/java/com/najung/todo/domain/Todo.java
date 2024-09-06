@@ -26,7 +26,7 @@ public class Todo {
     private Member member; // 유저 아이디
 
     @Setter
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10000)
     private String content; // 내용
     @Setter
     @Column(nullable = false)
@@ -34,6 +34,10 @@ public class Todo {
     @Setter
     @Column(nullable = false)
     private String important; // 중요도
+
+    @Setter
+    @Column(nullable = false)
+    private LocalDateTime dueDate; // 마감일
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @CreatedDate
@@ -48,15 +52,16 @@ public class Todo {
 
     protected Todo() {}
 
-    public Todo(Member member, String content, String complete, String important) {
+    public Todo(Member member, String content, String complete, String important, LocalDateTime dueDate) {
         this.member = member;
         this.content = content;
         this.complete = complete;
         this.important = important;
+        this.dueDate = dueDate != null ? dueDate : LocalDateTime.now();
         this.createdAt = LocalDateTime.now();
     }
-    public static Todo of(Member member, String content, String complete, String important) {
-        return new Todo(member, content, complete, important);
+    public static Todo of(Member member, String content, String complete, String important, LocalDateTime dueDate) {
+        return new Todo(member, content, complete, important, dueDate);
     }
 
 

@@ -4,8 +4,9 @@ import com.najung.todo.domain.Member;
 import com.najung.todo.domain.Todo;
 import com.najung.todo.dto.TodoDto;
 import com.najung.todo.dto.MemberDto;
+import com.najung.todo.dto.request.TodoRequest;
+import com.najung.todo.repository.MemberRepository;
 import com.najung.todo.repository.TodoRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,18 +30,21 @@ class TodoServiceTest {
 
     @InjectMocks private TodoService sut;
     @Mock private TodoRepository todoRepository;
+    @Mock private MemberRepository memberRepository;
 
-    @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo-list를 저장 ")
+    @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo를 저장")
     @Test
-    void givenNickname_whenSearchTodos_thenReturnsTodoList() {
-
+    void givenUserId_whenSearchTodos_thenReturnsTodoList() {
         // Given
+        TodoRequest req = createTodoRequest("test", "N", "N", null);
+        Long memberId = 1L;
+        Member member = createMember();
 
-        TodoDto dto = createTodoDto();
+        given(memberRepository.getReferenceById(memberId)).willReturn(member);
         given(todoRepository.save(any(Todo.class))).willReturn(createTodo());
 
         // When
-        sut.saveTodo(dto);
+        sut.saveTodo(memberId, req);
 
         // Then
         then(todoRepository).should().save(any(Todo.class));
@@ -46,7 +53,6 @@ class TodoServiceTest {
     @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo-list를 반환 ")
     @Test
     void givenTodoInfo_whenSavingTodo_thenSaveTodo() {
-
         // Given
         Long memberSno = 1L;
         Pageable pageable = Pageable.ofSize(20);
@@ -62,34 +68,64 @@ class TodoServiceTest {
     @DisplayName("유저의 ID와 todo의 ID를 받아, 해당 유저가 작성한 아이템 한개를 업데이트한다.")
     @Test
     void givenTodoInfo_whenUpdateTodo_thenUpdateTodo() {
-
         // Given
         Todo todo = createTodo();
-        TodoDto dto = createTodoDto("content", "complete", "important");
-        given(todoRepository.getReferenceById(dto.id())).willReturn(todo);
+        Member member = createMember();
+        Long todoId = 1L;
+        Long memberId= 1L;
+        TodoRequest req = createTodoRequest("content", "complete", "important", null);
+
+        given(todoRepository.getReferenceById(todoId)).willReturn(todo);
+        given(memberRepository.getReferenceById(memberId)).willReturn(member);
+
         // When
-        sut.updateTodo(dto);
+        sut.updateTodo(todoId, memberId, req);
         // Then
-        then(todoRepository).should().getReferenceById(dto.id());
+        then(todoRepository).should().getReferenceById(todoId);
 
     }
+
+
 
     @DisplayName("todo의 ID를 받아, 해당 유저가 작성한 아이템 한개를 삭제 한다.")
     @Test
     void givenTodoId_whenDeleteTodo_thenDeleteTo() {
+        // Given
+        Long todoId = 1L;
+        Long memberId = 1L;
+
+        willReturn(1).given(todoRepository).deleteByIdAndMember_Sno(todoId, memberId);
+
+        // When
+        boolean result = sut.deleteTodo(todoId, memberId);
+
+        // Then
+        assertThat(result).isTrue();
+        then(todoRepository).should().deleteByIdAndMember_Sno(todoId, memberId);
+    }
+
+    @DisplayName("todo 의 ID를 받아, 다음날로 일정을 변경한다.")
+    @Test
+    void givenTodoId_whenUpdateDueDate_thenUpdateDueDate(){
 
         // Given
         Long todoId = 1L;
-        willDoNothing().given(todoRepository).deleteById(todoId);
-
+        Long memberId = 1L;
+        LocalDate dueDate = LocalDate.parse("2024-09-06");
+        Todo todo = createTodo();
+        TodoRequest req = createTodoRequest(null, null, null, dueDate);
+        given(todoRepository.getReferenceById(todoId)).willReturn(todo);
         // When
-        sut.deleteTodo(todoId);
+        sut.updateDueDate(memberId, todoId, req);
         // Then
-        then(todoRepository).should().deleteById(todoId);
+        then(todoRepository).should().getReferenceById(todoId);
+
 
     }
 
-    private Member createMember(){
+
+
+    private Member createMember() {
         return Member.of(
                 "najung",
                 "12345",
@@ -98,32 +134,42 @@ class TodoServiceTest {
         );
     }
 
-    private Todo createTodo(){
+    private Todo createTodo() {
         return Todo.of(
                 createMember(),
                 "content",
                 "complete",
-                "important"
+                "important",
+                LocalDateTime.parse("2024-09-09T00:00:00")
         );
     }
 
-    private TodoDto createTodoDto() {
-        return createTodoDto("dddd", "N", "L");
+    private TodoRequest createTodoRequest(String content,
+                                          String complete,
+                                          String important,
+                                          LocalDate dueDate){
+        return TodoRequest.of(
+                content,
+                complete,
+                important,
+                dueDate
+        );
+
     }
-    private TodoDto createTodoDto(String content, String complete, String important) {
+
+    private TodoDto createTodoDto(String content, String complete, String important, LocalDateTime dueDate) {
         return TodoDto.of(
-                1L,
                 createUserDto(),
                 content,
                 complete,
-                important
+                important,
+                dueDate
         );
     }
 
-    public MemberDto createUserDto(){
+    public MemberDto createUserDto() {
         return MemberDto.of(
-                1L,
-                "najung"
+                1L
         );
     }
 }
