@@ -8,6 +8,8 @@
 6.  Swagger: RESTful API 문서화를 진행하였습니다.
 
 DB 스키마
+
+```sql
 CREATE TABLE todo (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,         -- 해당 todo의 고유값
     content VARCHAR(1000) NOT NULL,               -- todo의 내용
@@ -17,6 +19,7 @@ CREATE TABLE todo (
     createdAt DATETIME NOT NULL,                  -- 등록일
     modifiedAt DATETIME NOT NULL                  -- 수정일
 );
+
  
 
 CREATE TABLE member (
@@ -25,4 +28,4 @@ CREATE TABLE member (
     password VARCHAR(100) NOT NULL,               -- 유저 PW
     nickname VARCHAR(100) NOT NULL                -- 유저 별칭
 );
-
+```
