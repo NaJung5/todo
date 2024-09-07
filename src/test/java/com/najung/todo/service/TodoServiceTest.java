@@ -2,8 +2,8 @@ package com.najung.todo.service;
 
 import com.najung.todo.domain.Member;
 import com.najung.todo.domain.Todo;
-import com.najung.todo.dto.TodoDto;
 import com.najung.todo.dto.MemberDto;
+import com.najung.todo.dto.TodoDto;
 import com.najung.todo.dto.request.TodoRequest;
 import com.najung.todo.repository.MemberRepository;
 import com.najung.todo.repository.TodoRepository;
@@ -19,7 +19,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
@@ -28,15 +28,18 @@ import static org.mockito.BDDMockito.*;
 @ExtendWith(MockitoExtension.class)
 class TodoServiceTest {
 
-    @InjectMocks private TodoService sut;
-    @Mock private TodoRepository todoRepository;
-    @Mock private MemberRepository memberRepository;
+    @InjectMocks
+    private TodoService sut;
+    @Mock
+    private TodoRepository todoRepository;
+    @Mock
+    private MemberRepository memberRepository;
 
     @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo를 저장")
     @Test
     void givenUserId_whenSearchTodos_thenReturnsTodoList() {
         // Given
-        TodoRequest req = createTodoRequest("test", "N", "N", null);
+        TodoRequest req = createTodoRequest("test", "N", "N", 1, null);
         Long memberId = 1L;
         Member member = createMember();
 
@@ -48,6 +51,28 @@ class TodoServiceTest {
 
         // Then
         then(todoRepository).should().save(any(Todo.class));
+    }
+
+    @DisplayName("todo의 id를 받아 동일 아이템을 반복 등록한다.")
+    @Test
+    void givenTodoInfo_whenSaveMultipleTodo_thenSaveTodo() {
+        // Given
+        Long memberId = 1L;
+        Long todoId = 1L;
+        LocalDate dueDate = LocalDate.parse("2024-09-06");
+
+        Todo todo = createTodo();
+        Member member = createMember();
+        TodoRequest req = createTodoRequest("test", "N", "N", 1, dueDate);
+
+        given(memberRepository.getReferenceById(memberId)).willReturn(member);
+        given(todoRepository.getReferenceById(todoId)).willReturn(todo);
+
+        // When
+        sut.saveMultipleTodo(memberId, todoId, req);
+        // Then
+        then(todoRepository).should().save(any(Todo.class));
+
     }
 
     @DisplayName("유저ID를 받아, 해당 유저가 작성한 todo-list를 반환 ")
@@ -72,8 +97,8 @@ class TodoServiceTest {
         Todo todo = createTodo();
         Member member = createMember();
         Long todoId = 1L;
-        Long memberId= 1L;
-        TodoRequest req = createTodoRequest("content", "complete", "important", null);
+        Long memberId = 1L;
+        TodoRequest req = createTodoRequest("content", "complete", "important", 1, null);
 
         given(todoRepository.getReferenceById(todoId)).willReturn(todo);
         given(memberRepository.getReferenceById(memberId)).willReturn(member);
@@ -84,8 +109,6 @@ class TodoServiceTest {
         then(todoRepository).should().getReferenceById(todoId);
 
     }
-
-
 
     @DisplayName("todo의 ID를 받아, 해당 유저가 작성한 아이템 한개를 삭제 한다.")
     @Test
@@ -106,14 +129,14 @@ class TodoServiceTest {
 
     @DisplayName("todo 의 ID를 받아, 다음날로 일정을 변경한다.")
     @Test
-    void givenTodoId_whenUpdateDueDate_thenUpdateDueDate(){
+    void givenTodoId_whenUpdateDueDate_thenUpdateDueDate() {
 
         // Given
         Long todoId = 1L;
         Long memberId = 1L;
         LocalDate dueDate = LocalDate.parse("2024-09-06");
         Todo todo = createTodo();
-        TodoRequest req = createTodoRequest(null, null, null, dueDate);
+        TodoRequest req = createTodoRequest(null, null, null, 1, dueDate);
         given(todoRepository.getReferenceById(todoId)).willReturn(todo);
         // When
         sut.updateDueDate(memberId, todoId, req);
@@ -122,8 +145,6 @@ class TodoServiceTest {
 
 
     }
-
-
 
     private Member createMember() {
         return Member.of(
@@ -147,12 +168,14 @@ class TodoServiceTest {
     private TodoRequest createTodoRequest(String content,
                                           String complete,
                                           String important,
-                                          LocalDate dueDate){
+                                          int count,
+                                          LocalDate dueDate) {
         return TodoRequest.of(
                 content,
                 complete,
                 important,
-                dueDate
+                dueDate,
+                count
         );
 
     }

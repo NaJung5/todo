@@ -10,6 +10,7 @@ public record TodoRequest(
         String content,
         String complete,
         String important,
+        int count,
         LocalDate dueDate
 ) {
 
@@ -17,8 +18,8 @@ public record TodoRequest(
         return dueDate.atStartOfDay();
     }
 
-    public static TodoRequest of(String content, String complete, String important, LocalDate dueDate){
-        return new TodoRequest(content, complete, important, dueDate);
+    public static TodoRequest of(String content, String complete, String important, LocalDate dueDate, int count){
+        return new TodoRequest(content, complete, important, count, dueDate);
     }
 
 
