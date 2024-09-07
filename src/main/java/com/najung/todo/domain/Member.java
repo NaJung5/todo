@@ -40,8 +40,4 @@ public class Member {
     public static Member of(String userId, String userPassword, String nickname) {
         return new Member(userId, userPassword, nickname);
     }
-
-
-
-
 }
