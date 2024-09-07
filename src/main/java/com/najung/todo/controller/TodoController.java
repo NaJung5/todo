@@ -1,6 +1,5 @@
 package com.najung.todo.controller;
 
-import com.najung.todo.dto.MemberDto;
 import com.najung.todo.dto.request.TodoRequest;
 import com.najung.todo.dto.response.TodoResponse;
 import com.najung.todo.service.TodoService;
@@ -24,22 +23,30 @@ public class TodoController {
 
     @GetMapping
     public Page<TodoResponse> todo(@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-                                   @RequestParam Long userId){
+                                   @RequestParam Long userId) {
 
         return todoService.searchTodo(userId, pageable).map(TodoResponse::from);
     }
 
     @PostMapping("/members/{memberId}/todos")
     public ResponseEntity<?> postTodo(@PathVariable Long memberId,
-                                      @RequestBody TodoRequest todoRequest){
+                                      @RequestBody TodoRequest todoRequest) {
         todoService.saveTodo(memberId, todoRequest);
+        return ResponseEntity.ok("저장 되었습니다.");
+    }
+
+    @PostMapping("/members/{memberId}/todo/{todoId}/multiple")
+    public ResponseEntity<?> multipleTodo(@PathVariable Long memberId,
+                                          @PathVariable Long todoId,
+                                          @RequestBody TodoRequest todoRequest) {
+        todoService.saveMultipleTodo(memberId, todoId, todoRequest);
         return ResponseEntity.ok("저장 되었습니다.");
     }
 
     @PutMapping("/member/{memberId}/todo/{todoId}")
     public ResponseEntity<?> updateTodo(@PathVariable Long todoId,
                                         @PathVariable Long memberId,
-                                        @RequestBody TodoRequest todoRequest){
+                                        @RequestBody TodoRequest todoRequest) {
         todoService.updateTodo(todoId, memberId, todoRequest);
         return ResponseEntity.ok("수정 되었습니다.");
     }
@@ -56,7 +63,7 @@ public class TodoController {
 
     @DeleteMapping("/delete/{todoId}/{memberId}")
     public ResponseEntity<?> deleteTodo(@PathVariable Long todoId,
-                                        @PathVariable Long memberId){
+                                        @PathVariable Long memberId) {
         boolean isDeleted = todoService.deleteTodo(todoId, memberId);
         if (isDeleted) {
             return ResponseEntity.ok("삭제되었습니다.");
