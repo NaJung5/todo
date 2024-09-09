@@ -44,10 +44,10 @@ public class TodoController {
     }
 
     @PutMapping("/member/{memberId}/todo/{todoId}")
-    public ResponseEntity<?> updateTodo(@PathVariable Long todoId,
-                                        @PathVariable Long memberId,
+    public ResponseEntity<?> updateTodo(@PathVariable Long memberId,
+                                        @PathVariable Long todoId,
                                         @RequestBody TodoRequest todoRequest) {
-        todoService.updateTodo(todoId, memberId, todoRequest);
+        todoService.updateTodo(memberId, todoId, todoRequest);
         return ResponseEntity.ok("수정 되었습니다.");
     }
 

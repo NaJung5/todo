@@ -68,13 +68,11 @@ public class TodoService {
         return todoRepository.findByMember_sno(memberId, pageable).map(TodoDto::from);
     }
 
-    public void updateTodo(Long todoId, Long memberId, TodoRequest req) {
+    public void updateTodo(Long memberId, Long todoId, TodoRequest req) {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
             Member member = memberRepository.getReferenceById(memberId);
             TodoDto dto = req.toDto(MemberDto.of(member.getSno()), req);
-            log.info("todo member: {}, member: {}", todo.getMember(), member);
-            log.info("equals result: {}", todo.getMember().equals(member));
             if (todo.getMember().equals(member)) {
                 if (dto.complete() != null) todo.setComplete(dto.complete());
                 if (dto.important() != null) todo.setImportant(dto.important());
@@ -85,16 +83,14 @@ public class TodoService {
         }
     }
 
-    public void updateDueDate(Long todoId, Long memberId, TodoRequest req) {
+    public void updateDueDate(Long memberId, Long todoId, TodoRequest req) {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
             Member member = memberRepository.getReferenceById(memberId);
             TodoDto dto = req.toDto(MemberDto.of(member.getSno()), req);
-
             if (todo.getMember().equals(member)) {
                 if (dto.dueDate() != null) todo.setDueDate(dto.dueDate());
             }
-            log.info("update after: {}", todo.getDueDate());
         } catch (EntityNotFoundException e) {
             log.warn("수정 할 정보가 가 없습니다. - Request: {}", req);
         }
