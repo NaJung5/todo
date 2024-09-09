@@ -64,6 +64,11 @@ public class Todo {
         return new Todo(member, content, complete, important, dueDate);
     }
 
+    @PreUpdate
+    public void preUpdate() {
+        this.modifiedAt = LocalDateTime.now();
+    }
+
 
 }
 
