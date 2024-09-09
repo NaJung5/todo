@@ -130,14 +130,15 @@ class TodoServiceTest {
     @DisplayName("todo 의 ID를 받아, 다음날로 일정을 변경한다.")
     @Test
     void givenTodoId_whenUpdateDueDate_thenUpdateDueDate() {
-
         // Given
         Long todoId = 1L;
         Long memberId = 1L;
         LocalDate dueDate = LocalDate.parse("2024-09-06");
         Todo todo = createTodo();
+        Member member = createMember();
         TodoRequest req = createTodoRequest(null, null, null, 1, dueDate);
         given(todoRepository.getReferenceById(todoId)).willReturn(todo);
+        given(memberRepository.getReferenceById(memberId)).willReturn(member);
         // When
         sut.updateDueDate(memberId, todoId, req);
         // Then
