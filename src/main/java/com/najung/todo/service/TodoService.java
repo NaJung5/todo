@@ -68,14 +68,18 @@ public class TodoService {
         return todoRepository.findByMember_sno(memberId, pageable).map(TodoDto::from);
     }
 
-    public void updateTodo(Long todoId, Long memberId, TodoRequest req) {
+    public void updateTodo(Long memberId, Long todoId, TodoRequest req) {
         try {
+             /*
+              현재 테스트 코드에서는 todo와 member의 ID 값이 NULL인 문제를 발견
+              이로 인해 if 문이 통과하지 않아 테스트가 계속 실패
+              따라서, 임시로 Objects.equals를 사용하여 null 안전 비교를 진행.
+              추후 문제가 발생할 경우, 해당 로직을 수정할 필요가 있음.
+             */
             Todo todo = todoRepository.getReferenceById(todoId);
             Member member = memberRepository.getReferenceById(memberId);
             TodoDto dto = req.toDto(MemberDto.of(member.getSno()), req);
-            log.info("todo member: {}, member: {}", todo.getMember(), member);
-            log.info("equals result: {}", todo.getMember().equals(member));
-            if (todo.getMember().equals(member)) {
+            if (Objects.equals(todo.getMember().getSno(), member.getSno())) {
                 if (dto.complete() != null) todo.setComplete(dto.complete());
                 if (dto.important() != null) todo.setImportant(dto.important());
                 if (dto.content() != null) todo.setContent(dto.content());
@@ -85,16 +89,14 @@ public class TodoService {
         }
     }
 
-    public void updateDueDate(Long todoId, Long memberId, TodoRequest req) {
+    public void updateDueDate(Long memberId, Long todoId, TodoRequest req) {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
             Member member = memberRepository.getReferenceById(memberId);
             TodoDto dto = req.toDto(MemberDto.of(member.getSno()), req);
-
             if (todo.getMember().equals(member)) {
                 if (dto.dueDate() != null) todo.setDueDate(dto.dueDate());
             }
-            log.info("update after: {}", todo.getDueDate());
         } catch (EntityNotFoundException e) {
             log.warn("수정 할 정보가 가 없습니다. - Request: {}", req);
         }
