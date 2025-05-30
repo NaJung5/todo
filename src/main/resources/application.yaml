@@ -25,6 +25,9 @@ spring:
     base-path: /api
     detection-strategy: annotated
 
+jwt:
+  secret: +avKYWIyhu6UUdlGVNJ149HlGbt/QccfSUTF+hUYV40=
+
 springdoc:
   swagger-ui:
     groups-order: DESC

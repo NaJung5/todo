@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/member")
 @RestController
@@ -28,9 +27,4 @@ public class MemberController {
         return ResponseEntity.ok("가입 되었습니다.");
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        String token = memberService.login(request.userId(), request.userPassword());
-        return ResponseEntity.ok(Map.of("accessToken", token));
-    }
 }
