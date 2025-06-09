@@ -2,6 +2,7 @@ package com.najung.todo.dto.response;
 
 import com.najung.todo.dto.TodoDto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record TodoResponse(
@@ -10,7 +11,8 @@ public record TodoResponse(
         String complete,
         String important,
         LocalDateTime createdAt,
-        LocalDateTime modifiedAt
+        LocalDateTime modifiedAt,
+        LocalDateTime dueDate
 ) {
     public static TodoResponse from(TodoDto dto) {
         return new TodoResponse(
@@ -19,7 +21,8 @@ public record TodoResponse(
                 dto.complete(),
                 dto.important(),
                 dto.createdAt(),
-                dto.modifiedAt()
+                dto.modifiedAt(),
+                dto.dueDate()
         );
     }
 }

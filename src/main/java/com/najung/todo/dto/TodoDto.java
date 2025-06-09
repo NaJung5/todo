@@ -1,8 +1,9 @@
 package com.najung.todo.dto;
 
-import com.najung.todo.domain.Todo;
 import com.najung.todo.domain.Member;
+import com.najung.todo.domain.Todo;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record TodoDto(
@@ -15,12 +16,14 @@ public record TodoDto(
         LocalDateTime modifiedAt,
         LocalDateTime dueDate
 ) {
-    public static TodoDto of(Long id, MemberDto memberDto, String content, String complete, String important,LocalDateTime dueDate) {
+    public static TodoDto of(Long id, MemberDto memberDto, String content, String complete, String important, LocalDateTime dueDate) {
         return new TodoDto(id, memberDto, content, complete, important, LocalDateTime.now(), null, dueDate);
     }
+
     public static TodoDto of(MemberDto memberDto, String content, String complete, String important, LocalDateTime dueDate) {
         return new TodoDto(null, memberDto, content, complete, important, LocalDateTime.now(), null, dueDate);
     }
+
     public static TodoDto from(Todo entity) {
         return new TodoDto(
                 entity.getId(),
@@ -29,12 +32,12 @@ public record TodoDto(
                 entity.getComplete(),
                 entity.getImportant(),
                 entity.getCreatedAt(),
-                entity.getModifiedAt(),
+                entity.getModifiedAt() != null ? entity.getModifiedAt() : null,
                 entity.getDueDate()
         );
     }
 
-    public Todo toEntity(Member member){
+    public Todo toEntity(Member member) {
         return Todo.of(
                 member,
                 content,
@@ -43,7 +46,6 @@ public record TodoDto(
                 dueDate
         );
     }
-
 
 
 }

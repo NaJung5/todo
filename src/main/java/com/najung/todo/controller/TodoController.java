@@ -1,8 +1,12 @@
 package com.najung.todo.controller;
 
+import com.najung.todo.dto.CustomUserDetails;
 import com.najung.todo.dto.request.TodoRequest;
+import com.najung.todo.dto.request.TodoSearchRequest;
+import com.najung.todo.dto.response.PagedResponse;
 import com.najung.todo.dto.response.TodoResponse;
 import com.najung.todo.service.TodoService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -10,67 +14,86 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.Operation;
-
 
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/todo")
+@RequestMapping("/api/v1/todos")
 @RestController
 public class TodoController {
 
     private final TodoService todoService;
 
-    @Operation(summary = "todo 조회", description = "userId를 받아 해당 유저가 작성한 todo의 리스트를 반환")
-    @GetMapping
-    public Page<TodoResponse> todo(@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-                                   @RequestParam Long userId) {
+    @Operation(summary = "todo 조회", description = "로그인한 유저의 todo 목록 반환")
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public PagedResponse<TodoResponse> getTodos(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @ModelAttribute TodoSearchRequest searchRequest,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        return todoService.searchTodo(userId, pageable).map(TodoResponse::from);
+        Long memberId = userDetails.getMember().getId();
+        Page<TodoResponse> page = todoService.searchTodo(memberId, searchRequest, pageable).map(TodoResponse::from);
+
+        return PagedResponse.of(page);
     }
 
-    @Operation(summary = "todo 저장", description = "userId를 받아 해당 유저가 작성한 todo를 저장")
-    @PostMapping("/members/{memberId}/todos")
-    public ResponseEntity<?> postTodo(@PathVariable Long memberId,
-                                      @RequestBody TodoRequest todoRequest) {
+    @Operation(summary = "todo 저장", description = "로그인한 유저의 todo 생성")
+    @PostMapping
+    public ResponseEntity<?> postTodo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody TodoRequest todoRequest) {
+
+        Long memberId = userDetails.getMember().getId();
         todoService.saveTodo(memberId, todoRequest);
         return ResponseEntity.ok("저장 되었습니다.");
     }
 
-    @Operation(summary = "todo 반복", description = "userId와 todoId 받아 해당 유저가 작성한 todo를 반복 저장")
-    @PostMapping("/members/{memberId}/todo/{todoId}/multiple")
-    public ResponseEntity<?> multipleTodo(@PathVariable Long memberId,
-                                          @PathVariable Long todoId,
-                                          @RequestBody TodoRequest todoRequest) {
+    @Operation(summary = "todo 반복 저장", description = "기존 todo를 기반으로 반복 저장")
+    @PostMapping("/{todoId}/repeat")
+    public ResponseEntity<?> repeatTodo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long todoId,
+            @RequestBody TodoRequest todoRequest) {
+
+        Long memberId = userDetails.getMember().getId();
         todoService.saveMultipleTodo(memberId, todoId, todoRequest);
         return ResponseEntity.ok("저장 되었습니다.");
     }
 
-    @Operation(summary = "todo 업데이트", description = "userId와 todoId 받아 해당 유저가 작성한 todo를 업데이트")
-    @PutMapping("/member/{memberId}/todo/{todoId}")
-    public ResponseEntity<?> updateTodo(@PathVariable Long memberId,
-                                        @PathVariable Long todoId,
-                                        @RequestBody TodoRequest todoRequest) {
+    @Operation(summary = "todo 수정", description = "로그인한 유저의 특정 todo 수정")
+    @PutMapping("/{todoId}")
+    public ResponseEntity<?> updateTodo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long todoId,
+            @RequestBody TodoRequest todoRequest) {
+
+        Long memberId = userDetails.getMember().getId();
         todoService.updateTodo(memberId, todoId, todoRequest);
         return ResponseEntity.ok("수정 되었습니다.");
     }
 
-    @Operation(summary = "마감일 업데이트", description = "userId와 todoId 받아 해당 유저가 작성한 todo의 마감일을 변경")
-    @PatchMapping("/members/{memberId}/todo/{todoId}/due-date")
-    public ResponseEntity<?> updateDueDate(@PathVariable Long memberId,
-                                           @PathVariable Long todoId,
-                                           @RequestBody TodoRequest todoRequest) {
+    @Operation(summary = "마감일 수정", description = "todo의 마감일 변경")
+    @PatchMapping("/{todoId}/due-date")
+    public ResponseEntity<?> updateDueDate(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long todoId,
+            @RequestBody TodoRequest todoRequest) {
 
+        Long memberId = userDetails.getMember().getId();
         todoService.updateDueDate(memberId, todoId, todoRequest);
         return ResponseEntity.ok("일정이 수정되었습니다.");
     }
 
-    @Operation(summary = "todo 삭제", description = "userId와 todoId 받아 해당 유저가 작성한 todo를 삭제")
-    @DeleteMapping("/delete/{todoId}/{memberId}")
-    public ResponseEntity<?> deleteTodo(@PathVariable Long todoId,
-                                        @PathVariable Long memberId) {
+    @Operation(summary = "todo 삭제", description = "특정 todo 삭제")
+    @DeleteMapping("/{todoId}")
+    public ResponseEntity<?> deleteTodo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long todoId) {
+
+        Long memberId = userDetails.getMember().getId();
         boolean isDeleted = todoService.deleteTodo(todoId, memberId);
         if (isDeleted) {
             return ResponseEntity.ok("삭제되었습니다.");
