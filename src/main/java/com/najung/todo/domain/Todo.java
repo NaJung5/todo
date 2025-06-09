@@ -21,7 +21,7 @@ public class Todo {
     private Long id;
 
     @Setter
-    @JoinColumn(name = "sno")
+    @JoinColumn(name = "member_id")
     @ManyToOne(optional = false)
     private Member member; // 유저 아이디
 
@@ -36,7 +36,7 @@ public class Todo {
     private String important; // 중요도
 
     @Setter
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime dueDate; // 마감일
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -57,7 +57,7 @@ public class Todo {
         this.content = content;
         this.complete = complete;
         this.important = important;
-        this.dueDate = dueDate != null ? dueDate : LocalDateTime.now();
+        this.dueDate = dueDate;
         this.createdAt = LocalDateTime.now();
     }
     public static Todo of(Member member, String content, String complete, String important, LocalDateTime dueDate) {

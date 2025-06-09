@@ -18,14 +18,11 @@ public record TodoRequest(
         @Schema(description = "반복 횟수", example = "Y or N")
         int count,
         @Schema(description = "마감일", example = "2024-09-09")
-        LocalDate dueDate
+        LocalDateTime dueDate
 ) {
 
-    public LocalDateTime toLocalDateTime(){
-        return dueDate.atStartOfDay();
-    }
 
-    public static TodoRequest of(String content, String complete, String important, LocalDate dueDate, int count){
+    public static TodoRequest of(String content, String complete, String important, LocalDateTime dueDate, int count){
         return new TodoRequest(content, complete, important, count, dueDate);
     }
 
@@ -37,7 +34,7 @@ public record TodoRequest(
                 content != null ? content : req.content(),
                 complete != null ? complete : req.complete(),
                 important!= null ? important : req.important(),
-                dueDate != null ? toLocalDateTime() : LocalDateTime.now()
+                dueDate != null ? dueDate : req.dueDate()
         );
     }
 

@@ -14,7 +14,7 @@ public record MemberDto(
 
     public static MemberDto from(Member entity) {
         return new MemberDto(
-                entity.getSno()
+                entity.getId()
         );
     }
 
