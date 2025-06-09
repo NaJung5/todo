@@ -24,7 +24,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/signup", "/").permitAll()
+                        .requestMatchers("/login", "/signup", "/", "/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 //                        .anyRequest().authenticated() 개발 끝나면 제거
                         .anyRequest().permitAll()
                 )

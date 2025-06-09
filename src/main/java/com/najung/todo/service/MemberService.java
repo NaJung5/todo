@@ -14,8 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @RequiredArgsConstructor
 @Transactional
@@ -48,27 +46,31 @@ public class MemberService {
         if (!passwordEncoder.matches(request.userPassword(), member.getUserPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
+
         String userId = member.getUserId();
         String accessToken = jwtTokenProvider.createToken(userId, String.join(",", member.getRoles()));
         String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
-        refreshTokenRepository.save(new RefreshToken(
-                userId,
-                refreshToken,
-                LocalDateTime.now().plusDays(14))
-        );
+        refreshTokenRepository.findByMember(member)
+                .ifPresentOrElse(
+                        value -> refreshTokenRepository.updateTokenByMemberId(refreshToken, member.getId()),
+                        () -> refreshTokenRepository.save(new RefreshToken(member, refreshToken))
+                );
+
+
         return new TokenResponse(accessToken, refreshToken, jwtTokenProvider.getAccessTokenExpiryTime());
     }
 
     public TokenResponse reissue(String refreshToken) {
-
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new IllegalArgumentException("유효하지 않은 Refresh Token입니다.");
         }
-
         String userId = jwtTokenProvider.getUserId(refreshToken);
 
-        RefreshToken saved = refreshTokenRepository.findById(userId)
+        Member member = memberRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        RefreshToken saved = refreshTokenRepository.findByMember(member)
                 .orElseThrow(() -> new IllegalArgumentException("저장된 Refresh Token이 없습니다."));
 
         if (!saved.getToken().equals(refreshToken)) {

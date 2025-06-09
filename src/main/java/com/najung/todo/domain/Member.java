@@ -22,7 +22,7 @@ public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long sno; // 회원 번호
+    private Long id; // 회원 번호
 
     @Setter
     @Column(length = 50, unique = true, nullable = false)
