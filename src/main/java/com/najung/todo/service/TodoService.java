@@ -17,7 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -33,87 +34,91 @@ public class TodoService {
     public void saveTodo(Long memberId, TodoRequest todoRequest) {
         Member member = memberRepository.getReferenceById(memberId);
         TodoDto dto = todoRequest.toDto(MemberDto.of(member.getId()), todoRequest);
-        todoRepository.save(dto.toEntity(member));
 
-    }
+        LocalDate startDate = dto.dueDate() != null ? dto.dueDate().toLocalDate() : LocalDate.now();
+        LocalDate endDate = todoRequest.endDate() != null ? todoRequest.endDate() : startDate;
 
-    public void saveMultipleTodo(Long memberId, Long todoId, TodoRequest req) {
-        Todo todo = todoRepository.getReferenceById(todoId);
-        Member member = memberRepository.getReferenceById(memberId);
-        try {
-            /*
-              현재 테스트 코드에서는 todo와 member의 ID 값이 NULL인 문제를 발견
-              이로 인해 if 문이 통과하지 않아 테스트가 계속 실패
-              따라서, 임시로 Objects.equals를 사용하여 null 안전 비교를 진행.
-              추후 문제가 발생할 경우, 해당 로직을 수정할 필요가 있음.
-             */
-            if (Objects.equals(todo.getMember().getId(), member.getId())) {
-                for (int i = 0; i < req.count(); i++) {
-                    TodoRequest req1 = new TodoRequest(
-                            req.content(),
-                            req.complete(),
-                            req.important(),
-                            req.count(),
-                            req.dueDate().plusDays(i + 1)
-                    );
-                    TodoDto dto = req1.toDto(MemberDto.of(member.getId()), req1);
-                    Todo newTodo = dto.toEntity(member);
-                    todoRepository.save(newTodo);
-
-                }
+        if (!startDate.isAfter(endDate)) {
+            for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+                LocalDateTime dueDate = date.atStartOfDay();
+                TodoDto newDto = TodoDto.of(
+                        dto.memberDto(),
+                        dto.content(),
+                        dto.complete(),
+                        dto.important(),
+                        dto.startDate(),
+                        dto.endDate(),
+                        dueDate
+                );
+                todoRepository.save(newDto.toEntity(member));
             }
-        } catch (EntityNotFoundException e) {
-            log.warn("해당 ToDo가 존재하지 않습니다.");
+        } else {
+            throw new IllegalArgumentException("시작일은 종료일보다 이후일 수 없습니다.");
         }
     }
 
+
     @Transactional(readOnly = true)
     public Page<TodoDto> searchTodo(Long memberId, TodoSearchRequest todoSearchRequest, Pageable pageable) {
+        if (memberId == null || memberId <= 0) {
+            throw new IllegalArgumentException("유효하지 않은 사용자 입니다.");
+        }
         return todoQueryRepository.searchTodos(memberId, todoSearchRequest, pageable).map(TodoDto::from);
     }
 
     public void updateTodo(Long memberId, Long todoId, TodoRequest req) {
         try {
-             /*
-              현재 테스트 코드에서는 todo와 member의 ID 값이 NULL인 문제를 발견
-              이로 인해 if 문이 통과하지 않아 테스트가 계속 실패
-              따라서, 임시로 Objects.equals를 사용하여 null 안전 비교를 진행.
-              추후 문제가 발생할 경우, 해당 로직을 수정할 필요가 있음.
-             */
             Todo todo = todoRepository.getReferenceById(todoId);
-            Member member = memberRepository.getReferenceById(memberId);
-            TodoDto dto = req.toDto(MemberDto.of(member.getId()), req);
-            if (Objects.equals(todo.getMember().getId(), member.getId())) {
-                if (dto.complete() != null) todo.setComplete(dto.complete());
-                if (dto.important() != null) todo.setImportant(dto.important());
-                if (dto.content() != null) todo.setContent(dto.content());
-            }
+            checkOwner(todo, memberId);
+
+            TodoDto dto = req.toDto(MemberDto.of(memberId), req);
+
+            if (dto.content() != null) todo.setContent(dto.content());
+            if (dto.complete() != null) todo.setComplete(dto.complete());
+            if (dto.important() != null) todo.setImportant(dto.important());
+
         } catch (EntityNotFoundException e) {
-            log.warn("변경 할 todo-list 가 없습니다. - Request: {}", req);
+            log.warn("수정할 Todo가 존재하지 않습니다. todoId: {}, memberId: {}", todoId, memberId);
         }
     }
+
 
     public void updateDueDate(Long memberId, Long todoId, TodoRequest req) {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
-            Member member = memberRepository.getReferenceById(memberId);
-            TodoDto dto = req.toDto(MemberDto.of(member.getId()), req);
-            if (todo.getMember().equals(member)) {
-                if (dto.dueDate() != null) todo.setDueDate(dto.dueDate());
+            checkOwner(todo, memberId);
+
+            TodoDto dto = req.toDto(MemberDto.of(memberId), req);
+
+            if (dto.dueDate() != null) {
+                LocalDateTime dueDate = dto.dueDate();
+                LocalDate localDate = dueDate.toLocalDate();
+                todo.setDueDate(dueDate);
+                todo.setStartDate(localDate);
+                todo.setEndDate(localDate);
             }
+
         } catch (EntityNotFoundException e) {
-            log.warn("수정 할 정보가 가 없습니다. - Request: {}", req);
+            log.warn("수정할 Todo가 존재하지 않습니다. todoId: {}, memberId: {}", todoId, memberId);
         }
     }
+
 
     public boolean deleteTodo(Long todoId, Long memberId) {
         int deleteCount = todoRepository.deleteByIdAndMember_Id(todoId, memberId);
         if (deleteCount == 0) {
-            log.warn("삭제할 todo가 없습니다.");
+            log.warn("삭제할 todo가 없습니다. todoId={}, memberId={}", todoId, memberId);
             return false;
         } else {
-            log.info("삭제 성공");
+            log.info("todo 삭제 성공. todoId={}, memberId={}", todoId, memberId);
             return true;
+        }
+    }
+
+
+    private void checkOwner(Todo todo, Long memberId) {
+        if (!todo.getMember().getId().equals(memberId)) {
+            throw new IllegalArgumentException("해당 작업에 대한 권한이 없습니다.");
         }
     }
 

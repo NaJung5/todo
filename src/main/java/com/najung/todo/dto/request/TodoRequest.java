@@ -15,15 +15,17 @@ public record TodoRequest(
         String complete,
         @Schema(description = "할 일의 우선 순위", example = "L or M or H")
         String important,
-        @Schema(description = "반복 횟수", example = "Y or N")
-        int count,
+        @Schema(description = "시작일", example = "2024-09-09")
+        LocalDate startDate,
+        @Schema(description = "종료일", example = "2024-09-09")
+        LocalDate endDate,
         @Schema(description = "마감일", example = "2024-09-09")
         LocalDateTime dueDate
 ) {
 
 
-    public static TodoRequest of(String content, String complete, String important, LocalDateTime dueDate, int count){
-        return new TodoRequest(content, complete, important, count, dueDate);
+    public static TodoRequest of(String content, String complete, String important,LocalDate startDate, LocalDate endDate, LocalDateTime dueDate){
+        return new TodoRequest(content, complete, important, startDate, endDate, dueDate);
     }
 
 
@@ -34,6 +36,8 @@ public record TodoRequest(
                 content != null ? content : req.content(),
                 complete != null ? complete : req.complete(),
                 important!= null ? important : req.important(),
+                startDate != null ? startDate : req.startDate(),
+                endDate != null ? endDate : req.endDate(),
                 dueDate != null ? dueDate : req.dueDate()
         );
     }

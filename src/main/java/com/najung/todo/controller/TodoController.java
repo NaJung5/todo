@@ -51,18 +51,6 @@ public class TodoController {
         return ResponseEntity.ok("저장 되었습니다.");
     }
 
-    @Operation(summary = "todo 반복 저장", description = "기존 todo를 기반으로 반복 저장")
-    @PostMapping("/{todoId}/repeat")
-    public ResponseEntity<?> repeatTodo(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable Long todoId,
-            @RequestBody TodoRequest todoRequest) {
-
-        Long memberId = userDetails.getMember().getId();
-        todoService.saveMultipleTodo(memberId, todoId, todoRequest);
-        return ResponseEntity.ok("저장 되었습니다.");
-    }
-
     @Operation(summary = "todo 수정", description = "로그인한 유저의 특정 todo 수정")
     @PutMapping("/{todoId}")
     public ResponseEntity<?> updateTodo(
