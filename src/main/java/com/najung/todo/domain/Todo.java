@@ -8,6 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -39,6 +40,14 @@ public class Todo {
     @Column(nullable = true)
     private LocalDateTime dueDate; // 마감일
 
+    @Setter
+    @Column(nullable = false)
+    private LocalDate startDate; // 시작일
+
+    @Setter
+    @Column(nullable = false)
+    private LocalDate endDate; // 종료일
+
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -52,16 +61,19 @@ public class Todo {
 
     protected Todo() {}
 
-    public Todo(Member member, String content, String complete, String important, LocalDateTime dueDate) {
+    public Todo(Member member, String content, String complete, String important, LocalDate startDate, LocalDate endDate, LocalDateTime dueDate) {
         this.member = member;
         this.content = content;
         this.complete = complete;
         this.important = important;
         this.dueDate = dueDate;
         this.createdAt = LocalDateTime.now();
+        this.startDate = startDate;
+        this.endDate = endDate;
     }
-    public static Todo of(Member member, String content, String complete, String important, LocalDateTime dueDate) {
-        return new Todo(member, content, complete, important, dueDate);
+    public static Todo of(Member member, String content, String complete,
+                          String important, LocalDate startDate, LocalDate endDate,LocalDateTime dueDate) {
+        return new Todo(member, content, complete, important, startDate, endDate, dueDate);
     }
 
     @PreUpdate
