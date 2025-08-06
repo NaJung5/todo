@@ -22,8 +22,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
@@ -40,6 +40,8 @@ class TodoServiceTest {
     private TodoRepository todoRepository;
     @Mock
     private MemberRepository memberRepository;
+    @Mock
+    private LogService logService;
 
     @Mock
     private TodoQueryRepository todoQueryRepository;
@@ -60,6 +62,9 @@ class TodoServiceTest {
 
         // Then
         then(todoRepository).should().save(any(Todo.class));
+        then(logService).should().saveTodoLog(any(), eq("CREATE"), any());
+
+
     }
 
     @DisplayName("시작일과 종료일이 다를 경우, 날짜 수만큼 todo가 저장된다")
@@ -80,6 +85,8 @@ class TodoServiceTest {
 
         // Then
         then(todoRepository).should(times(3)).save(any(Todo.class));
+        then(logService).should(times(3)).saveTodoLog(any(), eq("CREATE"), any());
+
     }
 
     @DisplayName("날짜가 없으면 오늘 날짜로 todo 1건 저장된다")
@@ -97,6 +104,8 @@ class TodoServiceTest {
 
         // Then
         then(todoRepository).should().save(any(Todo.class));
+        then(logService).should().saveTodoLog(any(), eq("CREATE"), any());
+
     }
 
 
@@ -111,9 +120,7 @@ class TodoServiceTest {
                 .willThrow(new EntityNotFoundException("회원 없음"));
 
         // When & Then
-        assertThrows(EntityNotFoundException.class, () -> {
-            todoService.saveTodo(invalidMemberId, req);
-        });
+        assertThrows(EntityNotFoundException.class, () -> todoService.saveTodo(invalidMemberId, req));
     }
 
     @DisplayName("유저 ID와 검색 조건을 받아 todo 리스트를 조회한다")
@@ -131,6 +138,7 @@ class TodoServiceTest {
         assertDoesNotThrow(() -> {
             todoService.searchTodo(member.getId(), todoSearchRequest, pageable);
         });
+
     }
 
     @DisplayName("유효하지 않은 memberId로 조회 시 예외가 발생한다")
@@ -142,9 +150,9 @@ class TodoServiceTest {
         Pageable pageable = Pageable.ofSize(10);
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            todoService.searchTodo(invalidId, request, pageable);
-        });
+        assertThrows(IllegalArgumentException.class, () -> todoService.searchTodo(invalidId, request, pageable));
+        then(logService).should(never()).saveTodoLog(any(), any(), any());
+
     }
 
     @DisplayName("유저의 ID와 todo의 ID를 받아, 해당 유저가 작성한 아이템 한개를 업데이트한다.")
@@ -157,13 +165,12 @@ class TodoServiceTest {
         TodoRequest req = createTodoRequest("내용2", "N", "H", LocalDate.now(), LocalDate.now(), null);
 
         given(todoRepository.getReferenceById(todoId)).willReturn(todo);
-        given(memberRepository.getReferenceById(member.getId())).willReturn(member);
 
         // When
         todoService.updateTodo(todoId, member.getId(), req);
         // Then
         then(todoRepository).should().getReferenceById(todoId);
-
+        then(logService).should().saveTodoLog(any(), eq("UPDATE"), any());
     }
 
     @DisplayName("Todo의 작성자 ID와 요청자의 ID가 다르면 예외가 발생한다")
@@ -178,12 +185,11 @@ class TodoServiceTest {
         TodoRequest req = createTodoRequest("내용2", "N", "H", LocalDate.now(), LocalDate.now(), null);
 
         given(todoRepository.getReferenceById(todo.getId())).willReturn(todo);
-        given(memberRepository.getReferenceById(mismatchMember.getId())).willReturn(mismatchMember);
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            todoService.updateTodo(mismatchMember.getId(), todo.getId(), req);
-        });
+        assertThrows(IllegalArgumentException.class, () -> todoService.updateTodo(mismatchMember.getId(), todo.getId(), req));
+        then(logService).should(never()).saveTodoLog(any(), any(), any());
+
     }
 
 
@@ -191,19 +197,21 @@ class TodoServiceTest {
     @Test
     void givenValidTodoIdAndMemberId_whenDeleteTodo_thenReturnsTrue() {
         // Given
-        Long todoId = 1L;
-        Long memberId = 1L;
+        Member originalWriter = createMember();
+        Todo todo = createTodo();
 
-        given(todoRepository.deleteByIdAndMember_Id(todoId, memberId)).willReturn(1);
+        given(todoRepository.findByIdAndMember_Id(todo.getId(), todo.getMember().getId())).willReturn(Optional.of(todo));
 
         // When
-        boolean result = todoService.deleteTodo(todoId, memberId);
+        boolean result = todoService.deleteTodo(todo.getId(), todo.getMember().getId());
 
         // Then
         assertTrue(result);
-        then(todoRepository).should().deleteByIdAndMember_Id(todoId, memberId);
-    }
+        then(todoRepository).should().findByIdAndMember_Id(todo.getId(), todo.getMember().getId());
+        then(todoRepository).should().delete(todo);
+        then(logService).should().saveTodoLog(any(), eq("DELETE"), any());
 
+    }
     @DisplayName("존재하지 않는 Todo를 삭제 시 false를 반환한다")
     @Test
     void givenInvalidTodoIdOrMemberId_whenDeleteTodo_thenReturnsFalse() {
@@ -211,16 +219,18 @@ class TodoServiceTest {
         Long invalidTodoId = 999L;
         Long memberId = 1L;
 
-        given(todoRepository.deleteByIdAndMember_Id(invalidTodoId, memberId)).willReturn(0);
+        given(todoRepository.findByIdAndMember_Id(invalidTodoId, memberId)).willReturn(Optional.empty());
 
         // When
         boolean result = todoService.deleteTodo(invalidTodoId, memberId);
 
         // Then
         assertFalse(result);
-        then(todoRepository).should().deleteByIdAndMember_Id(invalidTodoId, memberId);
-    }
+        then(todoRepository).should().findByIdAndMember_Id(invalidTodoId, memberId);
+        then(todoRepository).should(never()).delete(any());
+        then(logService).should(never()).saveTodoLog(any(), any(), any());
 
+    }
 
     @DisplayName("todo의 ID를 받아, 다음날로 일정을 변경한다.")
     @Test
@@ -242,6 +252,8 @@ class TodoServiceTest {
         // Then
         then(todoRepository).should().getReferenceById(todoId);
         assertEquals(dueDate.atStartOfDay(), todo.getDueDate());
+        then(logService).should().saveTodoLog(any(), eq("UPDATE"), any());
+
     }
 
     @DisplayName("요청한 유저가 작성자가 아니라면 dueDate 수정 시 예외 발생")
@@ -261,9 +273,7 @@ class TodoServiceTest {
         given(todoRepository.getReferenceById(todoId)).willReturn(todo);
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            todoService.updateDueDate(memberId, todoId, req);
-        });
+        assertThrows(IllegalArgumentException.class, () -> todoService.updateDueDate(memberId, todoId, req));
     }
 
     private Member createMember() {

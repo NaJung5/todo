@@ -76,6 +76,15 @@ public class Todo {
         return new Todo(member, content, complete, important, startDate, endDate, dueDate);
     }
 
+    public static Todo copy(Todo original) {
+        Todo copy = new Todo();
+        copy.setContent(original.getContent());
+        copy.setComplete(original.getComplete());
+        copy.setImportant(original.getImportant());
+        copy.setDueDate(original.getDueDate());
+        return copy;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.modifiedAt = LocalDateTime.now();

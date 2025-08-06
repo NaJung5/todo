@@ -9,6 +9,7 @@ import com.najung.todo.dto.request.TodoSearchRequest;
 import com.najung.todo.repository.MemberRepository;
 import com.najung.todo.repository.TodoQueryRepository;
 import com.najung.todo.repository.TodoRepository;
+import com.najung.todo.util.LogFormatter;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,18 +32,18 @@ public class TodoService {
     private final TodoRepository todoRepository;
     private final TodoQueryRepository todoQueryRepository;
     private final MemberRepository memberRepository;
+    private final LogService logService;
 
     @Transactional
     public void saveTodo(Long memberId, TodoRequest todoRequest) {
         Member member = memberRepository.getReferenceById(memberId);
         TodoDto dto = todoRequest.toDto(MemberDto.of(member.getId()), todoRequest);
-
-        LocalDate startDate = dto.dueDate() != null ? dto.dueDate().toLocalDate() : LocalDate.now();
+        LocalDate startDate = todoRequest.startDate() != null ? todoRequest.startDate() : LocalDate.now();
         LocalDate endDate = todoRequest.endDate() != null ? todoRequest.endDate() : startDate;
+        LocalDateTime dueDate = todoRequest.dueDate() != null ? todoRequest.dueDate() : startDate.atTime(LocalTime.MAX);
 
         if (!startDate.isAfter(endDate)) {
             for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-                LocalDateTime dueDate = date.atStartOfDay();
                 TodoDto newDto = TodoDto.of(
                         dto.memberDto(),
                         dto.content(),
@@ -51,6 +54,9 @@ public class TodoService {
                         dueDate
                 );
                 todoRepository.save(newDto.toEntity(member));
+
+                String log = LogFormatter.formatCreateLog(newDto);
+                logService.saveTodoLog(memberId, "CREATE", log);
             }
         } else {
             throw new IllegalArgumentException("시작일은 종료일보다 이후일 수 없습니다.");
@@ -70,12 +76,16 @@ public class TodoService {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
             checkOwner(todo, memberId);
-
+            Todo copyTodo = Todo.copy(todo);
             TodoDto dto = req.toDto(MemberDto.of(memberId), req);
 
             if (dto.content() != null) todo.setContent(dto.content());
             if (dto.complete() != null) todo.setComplete(dto.complete());
             if (dto.important() != null) todo.setImportant(dto.important());
+
+            String log = LogFormatter.formatUpdateLog(copyTodo, todo);
+            logService.saveTodoLog(memberId, "UPDATE", log);
+
 
         } catch (EntityNotFoundException e) {
             log.warn("수정할 Todo가 존재하지 않습니다. todoId: {}, memberId: {}", todoId, memberId);
@@ -89,13 +99,16 @@ public class TodoService {
             checkOwner(todo, memberId);
 
             TodoDto dto = req.toDto(MemberDto.of(memberId), req);
-
+            Todo copyTodo = Todo.copy(todo);
             if (dto.dueDate() != null) {
                 LocalDateTime dueDate = dto.dueDate();
                 LocalDate localDate = dueDate.toLocalDate();
                 todo.setDueDate(dueDate);
                 todo.setStartDate(localDate);
                 todo.setEndDate(localDate);
+
+                String log = LogFormatter.formatUpdateLog(copyTodo, todo);
+                logService.saveTodoLog(memberId, "UPDATE", log);
             }
 
         } catch (EntityNotFoundException e) {
@@ -105,14 +118,21 @@ public class TodoService {
 
 
     public boolean deleteTodo(Long todoId, Long memberId) {
-        int deleteCount = todoRepository.deleteByIdAndMember_Id(todoId, memberId);
-        if (deleteCount == 0) {
+        Optional<Todo> todo = todoRepository.findByIdAndMember_Id(todoId, memberId);
+
+        if (todo.isEmpty()) {
             log.warn("삭제할 todo가 없습니다. todoId={}, memberId={}", todoId, memberId);
             return false;
-        } else {
-            log.info("todo 삭제 성공. todoId={}, memberId={}", todoId, memberId);
-            return true;
         }
+
+        Todo deleteTodo = todo.get();
+
+        todoRepository.delete(deleteTodo);
+
+        String log = LogFormatter.formatDeleteLog(deleteTodo);
+        logService.saveTodoLog(memberId, "DELETE", log);
+
+        return true;
     }
 
 
