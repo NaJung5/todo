@@ -58,6 +58,9 @@ public class Todo {
     @Column(nullable = true)
     private LocalDateTime modifiedAt; // 수정일시
 
+    @Version
+    private Long versions; // 낙관적 락 버전
+
 
     protected Todo() {}
 

@@ -11,10 +11,12 @@ import com.najung.todo.repository.TodoQueryRepository;
 import com.najung.todo.repository.TodoRepository;
 import com.najung.todo.util.LogFormatter;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,8 @@ import java.util.Optional;
 @Transactional
 @Service
 public class TodoService {
+
+    private static final int MAX_RETRY = 2;
 
     private final TodoRepository todoRepository;
     private final TodoQueryRepository todoQueryRepository;
@@ -72,6 +76,23 @@ public class TodoService {
         return todoQueryRepository.searchTodos(memberId, todoSearchRequest, pageable).map(TodoDto::from);
     }
 
+    public void updateTodoWithRetry(Long memberId, Long todoId, TodoRequest req) {
+        int attempt = 0;
+        while (true) {
+            try {
+                updateTodo(memberId, todoId, req);
+                return;
+            } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+                if (attempt++ == MAX_RETRY) throw e;
+                try {
+                    Thread.sleep(50L * (attempt + 1));
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+    @Transactional
     public void updateTodo(Long memberId, Long todoId, TodoRequest req) {
         try {
             Todo todo = todoRepository.getReferenceById(todoId);
