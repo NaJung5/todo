@@ -1,7 +1,8 @@
 # ToDo API 프로젝트
 
-Spring Boot 기반의 JWT 인증/인가 및 Querydsl 동적 검색 기능이 적용된 ToDo 관리 백엔드 API입니다.  
-회원가입, 로그인, 할 일 등록 및 조회 기능을 제공하며, 보안과 확장성을 고려한 구조로 설계하였습니다.
+Spring Boot 기반 ToDo 관리 API 프로젝트입니다.
+JWT 기반 인증 구조와 Querydsl 조건 검색을 중심으로 실무 수준의 백엔드 설계를 목표로 했으며
+동기·비동기·논블로킹·동시성 제어까지 포함해 다양한 처리 방식을 검증했습니다.
 
 ## 기술 스택
 
@@ -57,7 +58,6 @@ CREATE TABLE refresh_token (
 - 회원가입 (`POST /api/member/signup`)
 - 로그인 (`POST /api/member/login`) – Access / Refresh 토큰 발급
 - 토큰 재발급 (`POST /api/member/refresh`)
-
 ### 할 일 (Todo)
 - 등록 (`POST /api/todos`)
 - 단건 조회 (`GET /api/todos/{id}`)
@@ -67,10 +67,14 @@ CREATE TABLE refresh_token (
 - 삭제 (`DELETE /api/todos/{id}`)
 
 > 모든 ToDo API는 JWT 인증 필요 (Authorization 헤더에 Bearer 토큰 포함)
-
+### 처리 방식 검증
+ - 동기 처리: 기본 ToDo 검색 API (searchTodo)
+ - 비동기 처리: searchAsync, Timeout 테스트 적용
+ - 논블로킹 처리: Reactor Mono 기반 API 제공
+ - 레이스 컨디션 제어: Optimistic Lock 기반 테스트로 데이터 정합성 검증
+ - 동시성 검증: 멀티스레드 환경 테스트 코드 작성
 
 ## JWT 인증 구조
-
 - 로그인 시 AccessToken(30분), RefreshToken(7일) 발급
 - AccessToken 만료 시 RefreshToken으로 토큰 재발급 가능
 - 토큰은 HTTP Header에 `Authorization: Bearer {token}` 형식으로 전달
@@ -105,6 +109,12 @@ com.najung.todo
 # 프로젝트 클론
 git clone https://github.com/NaJung5/todo.git
 cd todo
+
+## 테스트 실행
+./gradlew test
+
+> 모든 단위/통합 테스트에는 동기, 비동기, 논블로킹, 동시성 검증이 포함되어 있습니다.
+
 
 # 의존성 설치 및 빌드
 ./gradlew clean build
