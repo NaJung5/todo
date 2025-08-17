@@ -32,53 +32,47 @@ public class TodoServiceConcurrencyTest {
 
     @Test
     void givenConcurrentUpdate_whenUsesOptimisticLock_thenWithRetry() throws Exception {
-        Member member = memberRepository.saveAndFlush(
-                Member.of("1",
-                        "1q2w3e",
-                        "najung",
-                        "najung@gmail.com"));
-        Todo todo = todoRepository.saveAndFlush(
-                Todo.of(
-                        member,
-                        "content",
-                        "complete",
-                        "important",
-                        LocalDate.now(),
-                        LocalDate.now(),
-                        LocalDateTime.now()
-                )
-        );
+        // Given
+        Member member = memberRepository.findByUserId("najung").orElseGet(() -> memberRepository.saveAndFlush(Member.of(
+                "najung",
+                "1q2w3e",
+                "najung",
+                "najung@gmail.com")));
+
+        Todo todo = todoRepository.saveAndFlush(Todo.of(member,
+                "content",
+                "complete",
+                "important",
+                LocalDate.now(),
+                LocalDate.now(),
+                LocalDateTime.now()));
 
         Long memberId = member.getId();
         Long todoId = todo.getId();
-
         int threads = 10;
         ExecutorService es = Executors.newFixedThreadPool(threads);
         CountDownLatch latch = new CountDownLatch(threads);
 
+        // When
         try {
             for (int i = 0; i < threads; i++) {
                 es.submit(() -> {
                     try {
-                        TodoRequest req = TodoRequest.of(
-                                "content", "N", "H",
-                                LocalDate.now(), LocalDate.now(), null
-                        );
+                        TodoRequest req = TodoRequest.of("content", "N", "H", LocalDate.now(), LocalDate.now(), null);
                         todoService.updateTodoWithRetry(memberId, todoId, req);
                     } finally {
                         latch.countDown();
                     }
                 });
             }
-
             boolean completed = latch.await(5, TimeUnit.SECONDS);
             assertTrue(completed, "작업들이 제한 시간 내에 끝나지 않았습니다.");
-
         } finally {
             es.shutdown();
             es.awaitTermination(3, TimeUnit.SECONDS);
         }
 
+        // Then
         Optional<Todo> refreshedOpt = todoRepository.findById(todoId);
         assertTrue(refreshedOpt.isPresent());
 

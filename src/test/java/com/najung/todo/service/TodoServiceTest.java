@@ -116,8 +116,7 @@ class TodoServiceTest {
         Long invalidMemberId = 999L;
         TodoRequest req = createTodoRequest("내용2", "N", "H", LocalDate.now(), LocalDate.now(), null);
 
-        given(memberRepository.getReferenceById(invalidMemberId))
-                .willThrow(new EntityNotFoundException("회원 없음"));
+        given(memberRepository.getReferenceById(invalidMemberId)).willThrow(new EntityNotFoundException("회원 없음"));
 
         // When & Then
         assertThrows(EntityNotFoundException.class, () -> todoService.saveTodo(invalidMemberId, req));
@@ -187,20 +186,22 @@ class TodoServiceTest {
         given(todoRepository.getReferenceById(todo.getId())).willReturn(todo);
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> todoService.updateTodo(mismatchMember.getId(), todo.getId(), req));
+        assertThrows(IllegalArgumentException.class,
+                () -> todoService.updateTodo(mismatchMember.getId(), todo.getId(), req));
         then(logService).should(never()).saveTodoLog(any(), any(), any());
 
     }
 
 
-    @DisplayName("정상적인 Todo를 삭제 시 true를 반환한다")
+    @DisplayName("정상적인 Todo를 삭제 시 true 반환한다")
     @Test
     void givenValidTodoIdAndMemberId_whenDeleteTodo_thenReturnsTrue() {
         // Given
         Member originalWriter = createMember();
         Todo todo = createTodo();
 
-        given(todoRepository.findByIdAndMember_Id(todo.getId(), todo.getMember().getId())).willReturn(Optional.of(todo));
+        given(todoRepository.findByIdAndMember_Id(todo.getId(),
+                todo.getMember().getId())).willReturn(Optional.of(todo));
 
         // When
         boolean result = todoService.deleteTodo(todo.getId(), todo.getMember().getId());
@@ -212,6 +213,7 @@ class TodoServiceTest {
         then(logService).should().saveTodoLog(any(), eq("DELETE"), any());
 
     }
+
     @DisplayName("존재하지 않는 Todo를 삭제 시 false를 반환한다")
     @Test
     void givenInvalidTodoIdOrMemberId_whenDeleteTodo_thenReturnsFalse() {
@@ -276,17 +278,13 @@ class TodoServiceTest {
         assertThrows(IllegalArgumentException.class, () -> todoService.updateDueDate(memberId, todoId, req));
     }
 
+
     private Member createMember() {
         return createMember(1L);
     }
 
     private Member createMember(Long memberId) {
-        Member member = Member.of(
-                "najung",
-                "1q2w3e4r",
-                "najung",
-                "najung@mail.com"
-        );
+        Member member = Member.of("najung", "1q2w3e4r", "najung", "najung@mail.com");
         ReflectionTestUtils.setField(member, "id", memberId);
         return member;
     }
@@ -296,15 +294,13 @@ class TodoServiceTest {
     }
 
     private Todo createTodo(Long todoId, Member member) {
-        Todo todo = Todo.of(
-                member,
+        Todo todo = Todo.of(member,
                 "content",
                 "complete",
                 "important",
                 LocalDate.now(),
                 LocalDate.now(),
-                LocalDateTime.parse("2024-09-09T00:00:00")
-        );
+                LocalDateTime.parse("2024-09-09T00:00:00"));
         ReflectionTestUtils.setField(todo, "id", todoId);
 
         return todo;
@@ -316,33 +312,27 @@ class TodoServiceTest {
                                           LocalDate startDate,
                                           LocalDate endDate,
                                           LocalDateTime dueDate) {
-        return TodoRequest.of(
-                content,
-                complete,
-                important,
-                startDate,
-                endDate,
-                dueDate
+        return TodoRequest.of(content, complete, important, startDate, endDate, dueDate
 
         );
 
     }
 
 
-    private TodoDto createTodoDto(String content, String complete, String important, LocalDate startDate, LocalDate endDate, LocalDateTime dueDate) {
-        return TodoDto.of(
-                createUserDto(),
-                content,
-                complete,
-                important,
-                startDate,
-                endDate,
-                dueDate
-        );
+    private TodoDto createTodoDto(String content,
+                                  String complete,
+                                  String important,
+                                  LocalDate startDate,
+                                  LocalDate endDate,
+                                  LocalDateTime dueDate) {
+        return TodoDto.of(createUserDto(), content, complete, important, startDate, endDate, dueDate);
     }
 
-    private TodoSearchRequest createSearchRequest(String keyword, String completed, String important,
-                                                  LocalDate startDate, LocalDate endDate) {
+    private TodoSearchRequest createSearchRequest(String keyword,
+                                                  String completed,
+                                                  String important,
+                                                  LocalDate startDate,
+                                                  LocalDate endDate) {
         TodoSearchRequest request = new TodoSearchRequest();
         ReflectionTestUtils.setField(request, "keyword", keyword);
         ReflectionTestUtils.setField(request, "completed", completed);
@@ -353,18 +343,10 @@ class TodoServiceTest {
     }
 
     private TodoSearchRequest createDefaultSearchRequest() {
-        return createSearchRequest(
-                "공부",
-                "Y",
-                "H",
-                LocalDate.now().minusDays(7),
-                LocalDate.now()
-        );
+        return createSearchRequest("공부", "Y", "H", LocalDate.now().minusDays(7), LocalDate.now());
     }
 
     public MemberDto createUserDto() {
-        return MemberDto.of(
-                1L
-        );
+        return MemberDto.of(1L);
     }
 }
