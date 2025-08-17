@@ -59,7 +59,7 @@ public class TodoController {
             @RequestBody TodoRequest todoRequest) {
 
         Long memberId = userDetails.getMember().getId();
-        todoService.updateTodo(memberId, todoId, todoRequest);
+        todoService.updateTodoWithRetry(memberId, todoId, todoRequest);
         return ResponseEntity.ok("수정 되었습니다.");
     }
 

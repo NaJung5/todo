@@ -58,6 +58,9 @@ public class Todo {
     @Column(nullable = true)
     private LocalDateTime modifiedAt; // 수정일시
 
+    @Version
+    private Long versions; // 낙관적 락 버전
+
 
     protected Todo() {}
 
@@ -74,6 +77,15 @@ public class Todo {
     public static Todo of(Member member, String content, String complete,
                           String important, LocalDate startDate, LocalDate endDate,LocalDateTime dueDate) {
         return new Todo(member, content, complete, important, startDate, endDate, dueDate);
+    }
+
+    public static Todo copy(Todo original) {
+        Todo copy = new Todo();
+        copy.setContent(original.getContent());
+        copy.setComplete(original.getComplete());
+        copy.setImportant(original.getImportant());
+        copy.setDueDate(original.getDueDate());
+        return copy;
     }
 
     @PreUpdate
